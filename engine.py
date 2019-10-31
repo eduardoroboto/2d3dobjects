@@ -27,7 +27,7 @@ if __name__ == "__main__":
     liney = Line(0,-10,0,10)
     linez = Line3d(0,0,-10,0,0,10)
     #quad = Triangle(0, 0, 5)
-    cc = Circle(0,0,2,10)
+    cc = Circle(0,0,2,500)
     qq = Cube(0,0,0,5)
 
     while True:
@@ -51,8 +51,8 @@ if __name__ == "__main__":
         # cube()
         # quad.draw()
         #quad2.draw()
-        #cc.draw()
-        qq.draw()
+        cc.draw()
+        #qq.draw()
 
         linex.draw()
         liney.draw()

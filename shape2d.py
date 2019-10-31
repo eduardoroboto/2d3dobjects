@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 from math import sin, cos, pi
 import copy
+from matrix import Matrix
 
 
 class Vertex():
@@ -11,6 +12,10 @@ class Vertex():
 
     def get_list(self):
         return [self.x, self.y]
+
+    def update(self,x,y):
+        self.x = x
+        self.y = y
 
 
 class Line():
@@ -24,6 +29,10 @@ class Line():
             glVertex2fv(vertex.get_list())
 
         glEnd()
+
+    def update(self,x1,y1,x2,y2):
+        self.line[0].update(x1,y1)
+        self.line[1].update(x2,y2)
 
 
 class Triangle():
