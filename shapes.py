@@ -1,26 +1,30 @@
 from OpenGL.GL import *
-from math import sin, cos, pi
+from math import sin, cos, pi, radians
 import copy
 
 from matrix import Matrix
+
+# matematica de mapepamento
+# Result := ((Input - InputLow) / (InputHigh - InputLow)) \
+#          * (OutputHigh - OutputLow) + OutputLow;
+def MAP(input, inputLow,inputHigh, outputLow ,outputHigh):
+    result = ((input - inputLow) / (inputHigh - inputLow)) * (outputHigh - outputLow) + outputLow
+
+    return result
 
 
 
 class Vertex():
 
-    def __init__(self, x, y,z=None):
+    def __init__(self, x, y,z=0):
         self.x = x
         self.y = y
-
-        if z is not None:
-            self.z = z
-        else:
-            self.z = 0
+        self.z = z
 
 
     def draw(self):
-        glBegin(GL_vertices)
-        glColor3fv((1, 1, 1))
+        glBegin(GL_POINTS)
+        glColor((1, 1, 1))
         glVertex3fv(self.get_list())
         glEnd()
 
@@ -28,8 +32,16 @@ class Vertex():
         return [self.x, self.y,self.z]
 
 
-    def __to_matrix(self):
-        return  Matrix(4,1,[self.x,self.y,self.z,1])
+    def __to_matrix(self,type):
+        if type == 1:
+            return  Matrix(4,1,[self.x,self.y,self.z,1])
+        if type == 2:
+            return Matrix(2,1, [self.x,self.y])
+        if type == 3:
+            return Matrix(3, 1, [self.x, self.y,self.z])
+        if type == 4:
+            return Matrix(3, 1, [self.x, self.y, 1])
+
 
     def __from_matrix(self, matriz):
         self.x = matriz[1, 1]
@@ -43,7 +55,7 @@ class Vertex():
 
 
     def translation(self,dx,dy,dz=None):
-        vertexMatrix = self.__to_matrix()
+        vertexMatrix = self.__to_matrix(1)
 
         if dz is not None:
             translationMatrix = Matrix(4, 4, [1, 0, 0, dx, 0, 1, 0, dy, 0, 0, 1, dz, 0, 0, 0, 1])
@@ -54,9 +66,41 @@ class Vertex():
 
         return self.__from_matrix(result)
 
+# MAP(input, inputLow,inputHigh, outputLow ,outputHigh)
 
-    def rotation(self,angle):
-        pass
+    def rotation(self,angle,axis='z'):
+        if self.z == "kkkk":
+            angle = radians(angle)
+            vertexMatrix = self.__to_matrix(2)
+            matrixRotation2d = Matrix(2,2,[cos(angle),-sin(angle),sin(angle),cos(angle)])
+            result =  matrixRotation2d.dot(vertexMatrix)
+            ok = result.return_list_cols(1)
+            self.update(ok[0], ok[1],0)
+        else:
+            angle = radians(angle)
+            vertexMatrix = self.__to_matrix(3)
+            matrixRotation3dX = Matrix(3,3,[1,0,0,0,cos(angle),-sin(angle),0,sin(angle),cos(angle)])
+            matrixRotation3dY = Matrix(3,3,[cos(angle),0,sin(angle),0,1,0,-sin(angle),0,cos(angle)])
+            matrixRotation3dZ = Matrix(3,3,[cos(angle),-sin(angle),0,sin(angle),cos(angle),0,0,0,1])
+
+            if axis == 'z':
+                result = matrixRotation3dZ.dot(vertexMatrix)
+                ok = result.return_list_cols(1)
+                self.update(ok[0], ok[1], ok[2])
+            elif axis == 'x':
+                result = matrixRotation3dX.dot(vertexMatrix)
+                ok = result.return_list_cols(1)
+                self.update(ok[0], ok[1], ok[2])
+            elif axis == 'y':
+                result = matrixRotation3dY.dot(vertexMatrix)
+                ok = result.return_list_cols(1)
+                self.update(ok[0], ok[1], ok[2])
+
+
+
+
+
+
 
     def scale(self, dx, dy, dz=None):
 
@@ -74,8 +118,22 @@ class Vertex():
             ok = result.return_list_rows(1)
             self.update(ok[0],ok[1],0)
 
-    def reflection(self):
-        pass
+    def reflection(self,type):
+        if type==1:
+            vetexMatrix = self.__to_matrix(3)
+
+            reflectionMatrix = Matrix(3,3, [1,0,0,0,-1,0,0,0,1])
+            result = reflectionMatrix.dot(vetexMatrix)
+            ok = result.return_list_cols(1)
+            return ok
+        elif type==2:
+            vetexMatrix = self.__to_matrix(4)
+            reflectionMatrix = Matrix(3, 3, [-1, 0, 0, 0, -1, 0, 0, 0, 1])
+            result = reflectionMatrix.dot(vetexMatrix)
+            ok = result.return_list_cols(1)
+            return ok
+
+
 
     def projection(self):
         pass
@@ -89,15 +147,25 @@ class Shape():
         for vertex in self.vertices:
             vertex.translation(dx,dy,dz)
 
-    def rotation(self, angle):
-        pass
+    def rotation(self, angle,axis):
+        for vertex in self.vertices:
+            vertex.rotation(angle,axis)
 
     def scale(self, dx, dy, dz=None):
         for vertex in self.vertices:
             vertex.scale(dx, dy, dz)
 
-    def reflection(self):
-        pass
+    def reflection(self,type=1):
+        reflection_vertices = list()
+        for vertex in self.vertices:
+            numbers = vertex.reflection(type)
+            if len(numbers) == 2:
+                reflection_vertices.append(Vertex(numbers[0],numbers[1]))
+            else:
+                reflection_vertices.append(Vertex(numbers[0],numbers[1],numbers[2]))
+
+        self.draw(reflection_vertices)
+
 
     def projection(self):
         pass
@@ -105,24 +173,35 @@ class Shape():
     def shear(self, angle):
         pass
 
+    def getAll(self,listaVertez):
+        self.vertices = listaVertez
+
 class Line(Shape):
-    def __init__(self, x1, y1, z1, x2, y2,z2):
+    def __init__(self, x1, y1, z1, x2, y2,z2,color=(1,1,1)):
         self.line = [Vertex(x1, y1,z1), Vertex(x2, y2,z2)]
+        self.color = color
 
-    def draw(self):
-        glBegin(GL_LINES)
-        glColor3fv((1, 1, 1))
-        for vertex in self.line:
-            glVertex3fv(vertex.get_list())
+    def draw(self,object=None):
+        if object is None:
+            glBegin(GL_LINES)
+            glColor(self.color)
+            for vertex in self.line:
+                glVertex3fv(vertex.get_list())
 
-        glEnd()
+            glEnd()
+        else:
+            glBegin(GL_LINES)
+            glColor(self.color)
+            for vertex in object.line:
+                glVertex3fv(vertex.get_list())
 
+            glEnd()
 
 
 
 class Triangle(Shape):
 
-    def __init__(self, x, y, width):
+    def __init__(self, x=0, y=0, width=0):
         self.vertices = self.__create_edges(x, y, width)
 
     def __create_edges(self, x, y, width):
@@ -134,13 +213,21 @@ class Triangle(Shape):
 
         return vertices_list
 
-    def draw(self):
-        glBegin(GL_TRIANGLES)
-        glColor3fv((0, 1, 0))
-        for vertex in self.vertices:
-            glVertex3fv(vertex.get_list())
+    def draw(self,object=None):
+        if object is None:
+            glBegin(GL_TRIANGLES)
+            glColor((0, 1, 0))
+            for vertex in self.vertices:
+                glVertex3fv(vertex.get_list())
 
-        glEnd()
+            glEnd()
+        else:
+            glBegin(GL_TRIANGLES)
+            glColor((0, 1, 0))
+            for vertex in object:
+                glVertex3fv(vertex.get_list())
+
+            glEnd()
 
 
 class Square(Shape):
@@ -160,18 +247,31 @@ class Square(Shape):
 
         return vertices_list
 
-    def draw(self):
-        glBegin(GL_TRIANGLES)
+    def draw(self,object=None):
+        if object is None:
+            glBegin(GL_TRIANGLES)
 
-        glVertex3fv(self.vertices[0].get_list())
-        glVertex3fv(self.vertices[1].get_list())
-        glVertex3fv(self.vertices[2].get_list())
+            glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[1].get_list())
+            glVertex3fv(self.vertices[2].get_list())
 
-        glVertex3fv(self.vertices[2].get_list())
-        glVertex3fv(self.vertices[0].get_list())
-        glVertex3fv(self.vertices[3].get_list())
+            glVertex3fv(self.vertices[2].get_list())
+            glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[3].get_list())
 
-        glEnd()
+            glEnd()
+        else:
+            glBegin(GL_TRIANGLES)
+
+            glVertex3fv(object[0].get_list())
+            glVertex3fv(object[1].get_list())
+            glVertex3fv(object[2].get_list())
+
+            glVertex3fv(object[2].get_list())
+            glVertex3fv(object[0].get_list())
+            glVertex3fv(object[3].get_list())
+
+            glEnd()
 
 
 class Rectangle(Shape):
@@ -193,23 +293,37 @@ class Rectangle(Shape):
 
         return vertices_list
 
-    def draw(self):
-        glBegin(GL_TRIANGLES)
+    def draw(self, object):
+        if object is None:
+            glBegin(GL_TRIANGLES)
 
-        glVertex3fv(self.vertices[0])
-        glVertex3fv(self.vertices[1])
-        glVertex3fv(self.vertices[2])
+            glVertex3fv(self.vertices[0])
+            glVertex3fv(self.vertices[1])
+            glVertex3fv(self.vertices[2])
 
-        glVertex3fv(self.vertices[2])
-        glVertex3fv(self.vertices[0])
-        glVertex3fv(self.vertices[3])
+            glVertex3fv(self.vertices[2])
+            glVertex3fv(self.vertices[0])
+            glVertex3fv(self.vertices[3])
 
-        glEnd()
+            glEnd()
+        else:
+            glBegin(GL_TRIANGLES)
+
+            glVertex3fv(object[0])
+            glVertex3fv(object[1])
+            glVertex3fv(object[2])
+
+            glVertex3fv(object[2])
+            glVertex3fv(object[0])
+            glVertex3fv(object[3])
+
+            glEnd()
+
 
 
 class Circle(Shape):
 
-    def __init__(self, x, y, radius, number,):
+    def __init__(self, x, y, radius, number):
         self.x = x
         self.y = y
         self.radius = radius
@@ -225,32 +339,36 @@ class Circle(Shape):
         angle = 2*pi / number
         for i in range(0, number):
             vertices_list.append(Vertex(hx, hy))
-            x = radius * cos(i*angle)
-            y =  radius * sin(i*angle)
+            x = hx+radius * cos(i*angle)
+            y =  hy+radius * sin(i*angle)
             vertices_list.append(Vertex(x, y))
-            x2 = radius * cos((i+1)*angle)
-            y2 = radius * sin((i+1)*angle)
+            x2 = hx+radius * cos((i+1)*angle)
+            y2 = hy+radius * sin((i+1)*angle)
             vertices_list.append(Vertex(x2 , y2))
 
 
         return vertices_list
 
 
-    def draw(self):
+    def draw(self,object=None):
+        if object is None:
+            glBegin(GL_TRIANGLES)
+            glColor4fv((1, 1, 1,1))
+            color = 0
 
-        # glBegin(GL_LINES)
-        glBegin(GL_TRIANGLES)
-        glColor4fv((1, 1, 1,1))
-        color = 0
+            for vertex in self.vertices:
+                glVertex3fv(vertex.get_list())
 
-        for vertex in self.vertices:
-            glVertex3fv(vertex.get_list())
-            print(vertex.get_list())
-            glColor4fv((1,1,1,color))
-            color = color + 0.1
+            glEnd()
+        else:
+            glBegin(GL_TRIANGLES)
+            glColor4fv((1, 1, 1, 1))
+            color = 0
 
-        glEnd()
+            for vertex in object:
+                glVertex3fv(vertex.get_list())
 
+            glEnd()
 
 
 class Cube(Shape):
@@ -277,64 +395,123 @@ class Cube(Shape):
 
         return vertices_list
 
-    def draw(self):
-        glBegin(GL_TRIANGLES)
-        #glColor3fv((0, 1, 0))
-        #lado 1
-        glVertex3fv(self.vertices[0].get_list())
-        glVertex3fv(self.vertices[1].get_list())
-        glVertex3fv(self.vertices[2].get_list())
+    def draw(self,object=None):
+        if object is None:
+            glBegin(GL_TRIANGLES)
+            #glColor((0, 1, 0))
+            #lado 1
+            glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[1].get_list())
+            glVertex3fv(self.vertices[2].get_list())
 
-        glVertex3fv(self.vertices[2].get_list())
-        glVertex3fv(self.vertices[0].get_list())
-        glVertex3fv(self.vertices[3].get_list())
-        #lado 2
-        glVertex3fv(self.vertices[0].get_list())
-        glVertex3fv(self.vertices[4].get_list())
-        glVertex3fv(self.vertices[7].get_list())
+            glVertex3fv(self.vertices[2].get_list())
+            glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[3].get_list())
+            #lado 2
+            glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[4].get_list())
+            glVertex3fv(self.vertices[7].get_list())
 
-        glVertex3fv(self.vertices[7].get_list())
-        glVertex3fv(self.vertices[0].get_list())
-        glVertex3fv(self.vertices[3].get_list())
+            glVertex3fv(self.vertices[7].get_list())
+            glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[3].get_list())
 
-        #lado 3
+            #lado 3
 
-        glVertex3fv(self.vertices[1].get_list())
-        glVertex3fv(self.vertices[5].get_list())
-        glVertex3fv(self.vertices[6].get_list())
+            glVertex3fv(self.vertices[1].get_list())
+            glVertex3fv(self.vertices[5].get_list())
+            glVertex3fv(self.vertices[6].get_list())
 
-        glVertex3fv(self.vertices[6].get_list())
-        glVertex3fv(self.vertices[1].get_list())
-        glVertex3fv(self.vertices[2].get_list())
+            glVertex3fv(self.vertices[6].get_list())
+            glVertex3fv(self.vertices[1].get_list())
+            glVertex3fv(self.vertices[2].get_list())
 
-        #lado 4
-        glVertex3fv(self.vertices[2].get_list())
-        glVertex3fv(self.vertices[6].get_list())
-        glVertex3fv(self.vertices[7].get_list())
+            #lado 4
+            glVertex3fv(self.vertices[2].get_list())
+            glVertex3fv(self.vertices[6].get_list())
+            glVertex3fv(self.vertices[7].get_list())
 
-        glVertex3fv(self.vertices[7].get_list())
-        glVertex3fv(self.vertices[2].get_list())
-        glVertex3fv(self.vertices[3].get_list())
+            glVertex3fv(self.vertices[7].get_list())
+            glVertex3fv(self.vertices[2].get_list())
+            glVertex3fv(self.vertices[3].get_list())
 
-        # lado 5
-        glVertex3fv(self.vertices[1].get_list())
-        glVertex3fv(self.vertices[5].get_list())
-        glVertex3fv(self.vertices[4].get_list())
+            # lado 5
+            glVertex3fv(self.vertices[1].get_list())
+            glVertex3fv(self.vertices[5].get_list())
+            glVertex3fv(self.vertices[4].get_list())
 
-        glVertex3fv(self.vertices[4].get_list())
-        glVertex3fv(self.vertices[1].get_list())
-        glVertex3fv(self.vertices[0].get_list())
+            glVertex3fv(self.vertices[4].get_list())
+            glVertex3fv(self.vertices[1].get_list())
+            glVertex3fv(self.vertices[0].get_list())
 
-        # lado 6
-        glVertex3fv(self.vertices[4].get_list())
-        glVertex3fv(self.vertices[5].get_list())
-        glVertex3fv(self.vertices[6].get_list())
+            # lado 6
+            glVertex3fv(self.vertices[4].get_list())
+            glVertex3fv(self.vertices[5].get_list())
+            glVertex3fv(self.vertices[6].get_list())
 
-        glVertex3fv(self.vertices[6].get_list())
-        glVertex3fv(self.vertices[4].get_list())
-        glVertex3fv(self.vertices[7].get_list())
+            glVertex3fv(self.vertices[6].get_list())
+            glVertex3fv(self.vertices[4].get_list())
+            glVertex3fv(self.vertices[7].get_list())
 
-        glEnd()
+            glEnd()
+
+        else:
+            glBegin(GL_TRIANGLES)
+
+            glVertex3fv(object[0].get_list())
+            glVertex3fv(object[1].get_list())
+            glVertex3fv(object[2].get_list())
+
+            glVertex3fv(object[2].get_list())
+            glVertex3fv(object[0].get_list())
+            glVertex3fv(object[3].get_list())
+            # lado 2
+            glVertex3fv(object[0].get_list())
+            glVertex3fv(object[4].get_list())
+            glVertex3fv(object[7].get_list())
+
+            glVertex3fv(object[7].get_list())
+            glVertex3fv(object[0].get_list())
+            glVertex3fv(object[3].get_list())
+
+            # lado 3
+
+            glVertex3fv(object[1].get_list())
+            glVertex3fv(object[5].get_list())
+            glVertex3fv(object[6].get_list())
+
+            glVertex3fv(object[6].get_list())
+            glVertex3fv(object[1].get_list())
+            glVertex3fv(object[2].get_list())
+
+            # lado 4
+            glVertex3fv(object[2].get_list())
+            glVertex3fv(object[6].get_list())
+            glVertex3fv(object[7].get_list())
+
+            glVertex3fv(object[7].get_list())
+            glVertex3fv(object[2].get_list())
+            glVertex3fv(object[3].get_list())
+
+            # lado 5
+            glVertex3fv(object[1].get_list())
+            glVertex3fv(object[5].get_list())
+            glVertex3fv(object[4].get_list())
+
+            glVertex3fv(object[4].get_list())
+            glVertex3fv(object[1].get_list())
+            glVertex3fv(object[0].get_list())
+
+            # lado 6
+            glVertex3fv(object[4].get_list())
+            glVertex3fv(object[5].get_list())
+            glVertex3fv(object[6].get_list())
+
+            glVertex3fv(object[6].get_list())
+            glVertex3fv(object[4].get_list())
+            glVertex3fv(object[7].get_list())
+
+            glEnd()
 
 class Cuboid(Shape):
     def __init__(self,x,y,z,width, height):
@@ -342,22 +519,24 @@ class Cuboid(Shape):
         self.y = y
         self.z = z
         self.width = width
-        self.heigth = height
+        self.height = height
 
-    def __create_vertices(self,x,y,width,heigth):
-        vertices_list = list()
+        self.vertices = self.__create_vertices(x,y,z,width,height)
 
-        vertices_list.append(Vertex(x, y, z))
-        vertices_list.append(Vertex(x + width, y, z))
-        vertices_list.append(Vertex(x + width, y + width, z))
-        vertices_list.append(Vertex(x, y + width, z))
+    def __create_vertices(self,x,y,z,width,height):
+        points_list = list()
 
-        vertices_list.append((self.x, self.y))
-        vertices_list.append((self.x + self.width, self.y))
-        vertices_list.append((self.x + self.width, self.y + self.height))
-        vertices_list.append((self.x, self.y + self.height))
+        points_list.append((x, y, z))
+        points_list.append((x + width, y, z))
+        points_list.append((x + width, y + width, z))
+        points_list.append((x, y + width, z))
 
-        return vertices_list
+        points_list.append((self.x, self.y))
+        points_list.append((self.x + self.width, self.y))
+        points_list.append((self.x + self.width, self.y + self.height))
+        points_list.append((self.x, self.y + self.height))
+
+        return points_list
 
     def draw(self):
         glBegin(GL_TRIANGLES)
@@ -372,15 +551,6 @@ class Cuboid(Shape):
 
         glEnd()
 
-# matematica de mapepamento
-# Result := ((Input - InputLow) / (InputHigh - InputLow)) \
-#          * (OutputHigh - OutputLow) + OutputLow;
-def MAP(input, inputLow,inputHigh, outputLow ,outputHigh):
-    result = ((input - inputLow) / (inputHigh - inputLow)) * (outputHigh - outputLow) + outputLow
-
-    return result
-
-
 
 
 
@@ -393,10 +563,10 @@ class Sphere(Shape):
         self.total = total
         self.halfPI = pi / 2
 
-        self.vertices = self.__creat_vertices()
+        self.vertices = self.__creat_vertices(self.x,self.y,self.z)
 
 
-    def __creat_vertices(self):
+    def __creat_vertices(self,x,y,z):
         globe = Matrix(self.total+1,self.total+1)
 
         for i in range(self.total+1):
@@ -406,34 +576,31 @@ class Sphere(Shape):
                 xC = self.radius * sin(lon) * cos(lat)
                 yC = self.radius * sin(lon) * sin(lat)
                 zC = self.radius * cos(lon)
-                globe[i,j] = Vertex(xC+self.x, yC+self.y, zC+self.z)
+                globe[i,j] = Vertex(xC+x, yC+y, zC+z)
 
         return globe
 
-    def __draw(self):
-        #for point in self.vertices:
-        for i in range(self.total):
-            for j in range(self.total + 1):
-                self.vertices[i,j].draw()
-
-
-    def __draw(self):
-        glBegin(GL_TRIANGLES)
-        for i in range(self.total):
-            for j in range(self.total + 1):
-                glVertex3fv(self.vertices[i, j].get_list())
-                glVertex3fv(self.vertices[i + 1, j].get_list())
 
     #GL_TRIANGLE_STRIP
-    def draw(self):
-        glBegin(GL_TRIANGLE_STRIP)
-        glColor4fv((0, 0, 1,0.3))
-        for i in range(self.total):
-            for j in range(self.total+1):
-                glVertex3fv(self.vertices[i,j].get_list())
-                glVertex3fv(self.vertices[i+1,j].get_list())
+    def draw(self,object=None):
+        if object is None:
+            glBegin(GL_TRIANGLE_STRIP)
+            glColor4fv((0, 0, 1,0.3))
+            for i in range(self.total):
+                for j in range(self.total+1):
+                    glVertex3fv(self.vertices[i,j].get_list())
+                    glVertex3fv(self.vertices[i+1,j].get_list())
 
-        glEnd()
+            glEnd()
+        else:
+            glBegin(GL_TRIANGLE_STRIP)
+            glColor4fv((0, 0, 1, 0.3))
+            for i in range(self.total):
+                for j in range(self.total + 1):
+                    glVertex3fv(object[i, j].get_list())
+                    glVertex3fv(object[i + 1, j].get_list())
+
+            glEnd()
 
 
     def translation(self, dx, dy, dz=None):
@@ -447,6 +614,32 @@ class Sphere(Shape):
                 for j in range(self.total + 1):
                     self.vertices[i,j].translation(dx,dy,0)
                     self.vertices[i + 1, j].translation(dx, dy, 0)
+
+    def rotation(self, angle,axis='z'):
+        for i in range(self.total):
+            for j in range(self.total + 1):
+                self.vertices[i,j].rotation(angle,axis)
+
+    def reflection(self, type=1):
+        if type == 1:
+            vetexMatrix = Matrix(3, 1, [self.x, self.y,self.z])
+
+            reflectionMatrix = Matrix(3, 3, [1, 0, 0, 0, -1, 0, 0, 0, 1])
+            result = reflectionMatrix.dot(vetexMatrix)
+            ok = result.return_list_cols(1)
+
+            reflectioGlobe = self.__creat_vertices(ok[0],ok[1],ok[2])
+
+        elif type == 2:
+            vetexMatrix = Matrix(3, 1, [self.x, self.y,self.z])
+            reflectionMatrix = Matrix(3, 3, [-1, 0, 0, 0, -1, 0, 0, 0, 1])
+            result = reflectionMatrix.dot(vetexMatrix)
+            ok = result.return_list_cols(1)
+
+            reflectioGlobe = self.__creat_vertices(ok[0],ok[1],ok[2])
+
+        self.draw(reflectioGlobe)
+
 
 
 class Pyramid(Shape):
