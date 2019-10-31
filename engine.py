@@ -6,7 +6,8 @@ from OpenGL.GLU import *
 from cube import *
 
 from shape2d import *
-from shape2d import Rectangle
+from shape3d import *
+
 
 if __name__ == "__main__":
     pygame.init()
@@ -24,9 +25,10 @@ if __name__ == "__main__":
 
     linex = Line(-10,0,10,0)
     liney = Line(0,-10,0,10)
-    # linez = Line(0,-10,0,10)
+    linez = Line3d(0,0,-10,0,0,10)
     #quad = Triangle(0, 0, 5)
-    cc = Circle(0,0,2,20)
+    cc = Circle(0,0,2,10)
+    qq = Cube(0,0,0,5)
 
     while True:
         for event in pygame.event.get():
@@ -49,10 +51,13 @@ if __name__ == "__main__":
         # cube()
         # quad.draw()
         #quad2.draw()
-        cc.draw()
+        #cc.draw()
+        qq.draw()
 
         linex.draw()
         liney.draw()
+        linez.draw()
+
 
 
         pygame.display.flip()

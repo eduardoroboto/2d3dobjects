@@ -133,13 +133,14 @@ class Circle():
 
         hx = copy.copy(x)
         hy = copy.copy(y)
+        angle = 2*pi / number
         for i in range(0, number):
             points_list.append(Vertex(hx, hy))
-            x = radius * cos(i)
-            y =  radius * sin(i)
+            x = radius * cos(i*angle)
+            y =  radius * sin(i*angle)
             points_list.append(Vertex(x, y))
-            x2 = radius * cos(i+1)
-            y2 = radius * sin(i+1)
+            x2 = radius * cos((i+1)*angle)
+            y2 = radius * sin((i+1)*angle)
             points_list.append(Vertex(x2 , y2))
 
 
@@ -150,10 +151,13 @@ class Circle():
 
         # glBegin(GL_LINES)
         glBegin(GL_TRIANGLES)
-        # glColor4fv((1, 1, 1,1))
+        glColor4fv((1, 1, 1,1))
+        color = 0
+
         for vertex in self.vertices:
             glVertex2fv(vertex.get_list())
             print(vertex.get_list())
-
+            glColor4fv((1,1,1,color))
+            color = color + 0.1
 
         glEnd()
