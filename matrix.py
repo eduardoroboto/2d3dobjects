@@ -1,4 +1,5 @@
 import copy
+from abstract_matrix import AbstractMatrix
 
 class Matrix(AbstractMatrix):
     def __init__(self, rows, cols, data = []):
@@ -55,7 +56,7 @@ class Matrix(AbstractMatrix):
             self.__valor_invalido(i,j)
             return self.data[(j-1) + (i-1) * self.cols]
         else:
-            return self.__return_list_rows(key)
+            return self.return_list_rows(key)
         
     def __setitem__(self, key, value):
 
@@ -67,13 +68,13 @@ class Matrix(AbstractMatrix):
             self.__insert_row(key,value)
 
     def __repr__(self):
-            s = str()
-            for i in range(1,self.rows + 1):
-                for j in range(1,self.cols + 1):
-                    s+=" {:^5.1f}".format(self[i, j])
-                s+="\n"
-            
-            return s
+        s = str()
+        for i in range(1, self.rows + 1):
+            for j in range(1, self.cols + 1):
+                s += " {:^5.1f}".format(self[i, j])
+            s += "\n"
+
+        return s
 
     def __str__(self):
        return self.__repr__()
@@ -199,8 +200,8 @@ class Matrix(AbstractMatrix):
             new_matrix = Matrix(self.rows,b.cols)
             for i in range(1,new_matrix.rows + 1):
                 for j in range(1,new_matrix.cols + 1):
-                    list_rows = self.__return_list_rows(i)
-                    list_cols = b.__return_list_cols(j)
+                    list_rows = self.return_list_rows(i)
+                    list_cols = b.return_list_cols(j)
                     value = 0
                     for x1, x2 in zip(list_cols, list_rows):
                         value += x1*x2
@@ -228,7 +229,7 @@ class Matrix(AbstractMatrix):
                 else:
                     raise Exception('Init error', 'The data is incompatible with matrix size')
             except Exception as e:
-                self._print_error(e)
+                print(e)
         else:
             self.data = [0] * (self.rows * self.cols)
 
@@ -238,7 +239,7 @@ class Matrix(AbstractMatrix):
 
     
 
-    def __return_list_rows(self, index):
+    def return_list_rows(self, index):
         rows = list()
 
         for i in range(1,self.cols + 1):
@@ -246,19 +247,14 @@ class Matrix(AbstractMatrix):
         
         return rows
 
-    def __return_list_cols(self,index):
+    def return_list_cols(self,index):
         cols = list()
         for i in range(1,self.rows + 1):
             cols.append(self[i,index])
 
         return cols
 
-    def return_list_cols(self,index):
-        cols = list()
-        for i in range(1,self.rows + 1):
-            cols.append(round(self[i,index],1))
 
-        return cols
 
     def get_first_one(self,posx,posy):
         #print(posy,posx)
