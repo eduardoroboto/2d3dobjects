@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="51873d23-2fdd-4687-8a38-058f0f0485ab" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/solar_system.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/solar_system.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shape3d.py" beforeDir="false" afterPath="$PROJECT_DIR$/shape3d.py" afterDir="false" />
-    </list>
+    <list default="true" id="51873d23-2fdd-4687-8a38-058f0f0485ab" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,6 +130,7 @@
       <workItem from="1572268031042" duration="120000" />
       <workItem from="1572265338165" duration="8250000" />
       <workItem from="1572282749861" duration="20916000" />
+      <workItem from="1572481800230" duration="12000" />
     </task>
     <servers />
   </component>
